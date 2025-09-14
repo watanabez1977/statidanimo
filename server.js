@@ -129,3 +129,6 @@ app.get('/status/:listId', async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log('Server listening on port', PORT));
+app.post('/create', (req, res) => {
+  res.redirect(307, '/create-list');
+});
