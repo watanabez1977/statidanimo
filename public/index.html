@@ -1,35 +1,56 @@
-
 <!DOCTYPE html>
-<html>
+<html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>Crea una lista</title>
+  <title>Crea lista</title>
+  <style>
+    body { font-family: sans-serif; margin: 2em; }
+    textarea { width: 100%; height: 120px; }
+    button { margin-top: 1em; padding: 0.5em 1em; }
+    .output { margin-top: 1em; font-weight: bold; }
+  </style>
 </head>
 <body>
-  <h1>Generatore di liste uniche</h1>
-  <form id="listForm">
-    <label>Titolo: <input type="text" name="title" required></label><br><br>
-    <label>Elementi (separati da virgola):<br>
-      <textarea name="items" rows="5" cols="40" required></textarea>
-    </label><br><br>
-    <button type="submit">Crea lista</button>
-  </form>
-  <div id="result"></div>
+  <h1>Genera la tua lista</h1>
+
+  <p>Inserisci gli elementi della lista, separati da virgola:</p>
+  <textarea id="items">gioia, rabbia, paura, tristezza</textarea>
+  <br>
+  <button id="createBtn">Crea lista</button>
+
+  <div class="output">
+    <p>Link da condividere: <span id="share-link"></span></p>
+    <p>Link stato: <span id="status-link"></span></p>
+  </div>
+
   <script>
-    document.getElementById('listForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const formData = new FormData(e.target);
-      const data = Object.fromEntries(formData.entries());
-      const res = await fetch('/create-list', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
-      const json = await res.json();
-      document.getElementById('result').innerHTML = `
-        <p><b>Link da condividere:</b> <a href="${json.joinUrl}" target="_blank">${json.joinUrl}</a></p>
-        <p><b>Link stato:</b> <a href="${json.statusUrl}" target="_blank">${json.statusUrl}</a></p>
-      `;
+    document.getElementById("createBtn").addEventListener("click", async () => {
+      const items = document.getElementById("items").value
+        .split(",")
+        .map(s => s.trim())
+        .filter(s => s.length > 0);
+
+      try {
+        const res = await fetch("/create-list", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ items })
+        });
+
+        if (!res.ok) {
+          throw new Error("Errore server: " + res.status);
+        }
+
+        const data = await res.json();
+        document.getElementById("share-link").textContent = data.shareUrl || "Errore";
+        document.getElementById("status-link").textContent = data.statusUrl || "Errore";
+
+      } catch (err) {
+        console.error(err);
+        alert("Errore nella creazione della lista. Vedi console.");
+      }
     });
   </script>
 </body>
