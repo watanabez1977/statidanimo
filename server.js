@@ -5,7 +5,7 @@ const { v4: uuidv4 } = require("uuid");
 const app = express();
 const port = process.env.PORT || 3000;
 
-app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static("public"));
 
 let lists = {};
@@ -15,15 +15,20 @@ app.get("/", (req, res) => {
   res.sendFile(__dirname + "/public/index.html");
 });
 
-// Creazione lista
+// Creazione lista (ora da form HTML, non fetch)
 app.post("/create", (req, res) => {
   const { items } = req.body;
-  if (!items || !Array.isArray(items)) {
-    return res.status(400).send("Formato non valido.");
+  if (!items) {
+    return res.send("<h1>Errore: nessun elemento inserito.</h1>");
+  }
+
+  const itemArray = items.split(",").map(i => i.trim()).filter(i => i.length > 0);
+  if (itemArray.length === 0) {
+    return res.send("<h1>Errore: lista vuota.</h1>");
   }
 
   const id = uuidv4();
-  lists[id] = { items, assigned: [] };
+  lists[id] = { items: itemArray, assigned: [] };
 
   const baseUrl = `${req.protocol}://${req.get("host")}`;
   const joinUrl = `${baseUrl}/join/${id}`;
