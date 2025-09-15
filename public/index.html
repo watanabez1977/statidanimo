@@ -1,55 +1,69 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8">
-  <title>Crea lista</title>
+  <meta charset="utf-8"/>
+  <title>Genera lista</title>
   <style>
-    body { font-family: sans-serif; margin: 2em; }
-    textarea { width: 100%; height: 120px; }
-    button { margin-top: 1em; padding: 0.5em 1em; }
-    .output { margin-top: 1em; font-weight: bold; }
+    body{font-family:system-ui,Arial;max-width:900px;margin:18px auto;padding:10px}
+    textarea{width:100%;height:120px}
+    button{padding:8px 12px;margin-top:8px}
+    .box{background:#f7f7f7;padding:10px;border-radius:6px;margin-top:12px}
+    a.copy{display:inline-block;margin-left:8px}
   </style>
 </head>
 <body>
-  <h1>Genera la tua lista</h1>
-
-  <p>Inserisci gli elementi della lista, separati da virgola:</p>
-  <textarea id="items"></textarea>
-  <br>
+  <h1>Crea una lista</h1>
+  <p>Inserisci gli elementi separati da virgola:</p>
+  <textarea id="items">gioia, tristezza, rabbia, paura</textarea><br>
+  <input id="title" placeholder="Titolo (opzionale)" style="width:100%;margin-top:8px"/><br>
   <button id="createBtn">Crea lista</button>
 
-  <div class="output">
-    <p>Link da condividere: <span id="share-link"></span></p>
-    <p>Link stato: <span id="status-link"></span></p>
+  <div id="out" class="box" style="display:none">
+    <p><strong>Link da condividere:</strong> <span id="shareLinkText"></span>
+      <button id="copyBtn">📋 Copia</button></p>
+    <p><strong>Link stato:</strong> <span id="statusLinkText"></span></p>
   </div>
 
   <script>
-    document.getElementById("createBtn").addEventListener("click", async () => {
-      const items = document.getElementById("items").value
-        .split(",")
-        .map(s => s.trim())
-        .filter(s => s.length > 0);
+    const createBtn = document.getElementById('createBtn');
+    createBtn.addEventListener('click', async () => {
+      const raw = document.getElementById('items').value;
+      const title = document.getElementById('title').value;
+      const items = raw.split(',').map(s => s.trim()).filter(Boolean);
+      if (items.length === 0) return alert('Inserisci almeno un elemento');
 
       try {
-        const res = await fetch("/create-list", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({ items })
+        const res = await fetch('/create-list', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ title, items })
         });
-
         if (!res.ok) {
-          throw new Error("Errore server: " + res.status);
+          const txt = await res.text();
+          throw new Error('Server: ' + res.status + ' — ' + txt);
         }
-
         const data = await res.json();
-        document.getElementById("share-link").textContent = data.shareUrl || "Errore";
-        document.getElementById("status-link").textContent = data.statusUrl || "Errore";
+
+        const origin = window.location.origin;
+        const shareFull = origin + (data.shareUrl || ('/join/' + data.id));
+        const statusFull = origin + (data.statusUrl || ('/status-page/' + data.id));
+
+        document.getElementById('shareLinkText').innerHTML = `<a href="${shareFull}" target="_blank">${shareFull}</a>`;
+        document.getElementById('statusLinkText').innerHTML = `<a href="${statusFull}" target="_blank">${statusFull}</a>`;
+        document.getElementById('out').style.display = 'block';
+
+        document.getElementById('copyBtn').onclick = async () => {
+          try {
+            await navigator.clipboard.writeText(shareFull);
+            alert('Link copiato negli appunti!');
+          } catch(e) {
+            alert('Impossibile copiare automaticamente, seleziona e copia manualmente.');
+          }
+        };
 
       } catch (err) {
         console.error(err);
-        alert("Errore nella creazione della lista. Vedi console.");
+        alert('Errore nella creazione: ' + err.message);
       }
     });
   </script>
